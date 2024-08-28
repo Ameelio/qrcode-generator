@@ -28,6 +28,8 @@ spec:
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
+      imagePullSecrets:
+        - name: ameelio-registry
       containers:
       - image: registry.digitalocean.com/ameelio-registry/qrcode-generator:${RELEASE_VERSION}
         name: qrcode-generator
