@@ -8,7 +8,7 @@ else
 fi
 
 docker build \
-  --file Dockerfile.prod \
+  --file Dockerfile \
   --tag "registry.digitalocean.com/ameelio-registry/qrcode-generator:${RELEASE_VERSION}" \
   --tag "registry.digitalocean.com/ameelio-registry/qrcode-generator:latest" \
   .
