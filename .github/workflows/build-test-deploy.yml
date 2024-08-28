@@ -1,0 +1,114 @@
+name: Build -> Test -> Deploy
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'prod-*'
+  # Triggers a Build -> Test -> Deploy  at 2:00am EST (0600 UTC)
+  schedule:
+    - cron: '0 6 * * *'
+
+env:
+  RELEASE_VERSION: ${{ github.sha }}
+
+jobs:
+  build:
+    name: Build and Push (Prod)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Image
+        run: ./scripts/build-release.sh
+
+      - name: Authenticate to Container Registry
+        env:
+          DOCKER_CONFIG: ${{ secrets.DOCKER_CONFIG }}
+        run: |
+          mkdir -p $HOME/.docker
+          echo "${DOCKER_CONFIG}" > $HOME/.docker/config.json
+
+      - name: Push Image
+        run: ./scripts/push-release.sh
+
+  test:
+    name: Run Tests
+    needs: [build]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test
+        run: ./scripts/run-ci.sh
+
+  deploy-staging:
+    name: Deploy (Staging)
+    needs: [build, test]
+    runs-on: ubuntu-latest
+    concurrency: deploy_staging_mutex
+    env:
+      ENV: staging
+      K8S_SERVER: ${{ secrets.K8S_ENDPOINT_STAGING }}
+      K8S_TOKEN: ${{ secrets.K8S_TOKEN_STAGING }}
+      K8S_CA_CERT: ${{ secrets.K8S_CA_CERT_STAGING }}
+      SLACK_CHANNEL: '#infra-info'
+      SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Render Manifests
+        run: ./scripts/deploy-release.sh --save-deploy --manifest-dir "manifests-${RELEASE_VERSION}-${ENV}" --debug
+
+      - name: Archive Rendered Kubernetes Manifests
+        uses: actions/upload-artifact@v4
+        with:
+          name: "manifests-${{ env.RELEASE_VERSION }}-${{ env.ENV }}"
+          path: "manifests-${{ env.RELEASE_VERSION }}-${{ env.ENV }}"
+
+      # - name: Run migrations
+      #   run: ./scripts/deploy-release.sh --apply-migration --manifest-dir "manifests-${RELEASE_VERSION}-${ENV}" --debug
+
+      - name: Deploy new version
+        run: ./scripts/deploy-release.sh --apply-deploy --manifest-dir "manifests-${RELEASE_VERSION}-${ENV}" --debug
+
+  deploy-prod:
+    if: ${{ startsWith(github.ref, 'refs/tags/prod-') }}
+    name: Deploy (Prod)
+    needs: [build, test, deploy-staging]
+    runs-on: ubuntu-latest
+    concurrency: deploy_prod_mutex
+    env:
+      ENV: prod
+      K8S_SERVER: ${{ secrets.K8S_ENDPOINT_PROD }}
+      K8S_TOKEN: ${{ secrets.K8S_TOKEN_PROD }}
+      K8S_CA_CERT: ${{ secrets.K8S_CA_CERT_PROD }}
+      SLACK_CHANNEL: '#infra-info'
+      SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Render Manifests
+        run: ./scripts/deploy-release.sh --save-deploy --manifest-dir "manifests-${RELEASE_VERSION}-${ENV}" --debug
+
+      - name: Archive Rendered Kubernetes Manifests
+        uses: actions/upload-artifact@v4
+        with:
+          name: "manifests-${{ env.RELEASE_VERSION }}-${{ env.ENV }}"
+          path: "manifests-${{ env.RELEASE_VERSION }}-${{ env.ENV }}"
+
+      #- name: Run migrations
+      #  run: ./scripts/deploy-release.sh --apply-migration --manifest-dir "manifests-${RELEASE_VERSION}-${ENV}" --debug
+
+      - name: Deploy new version
+        run: ./scripts/deploy-release.sh --apply-deploy --manifest-dir "manifests-${RELEASE_VERSION}-${ENV}" --debug
+
+

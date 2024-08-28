@@ -1,0 +1,166 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: qrcode-generator
+    tier: web
+    env: staging
+    kind: deployment
+  name: qrcode-generator
+  namespace: qrcode-generator-staging
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: qrcode-generator
+#      tier: web
+#      env: staging
+  template:
+    metadata:
+      labels:
+        app: qrcode-generator
+        tier: web
+        env: staging
+        kind: pod
+      namespace: qrcode-generator-staging
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+      - image: docker.io/freedomben/malan:${RELEASE_VERSION}
+        name: qrcode-generator
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 4000
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /health_check/readiness
+            port: 4000
+          initialDelaySeconds: 5
+          periodSeconds: 2
+        envFrom:
+          - configMapRef:
+              name: qrcode-generator-web-config
+          - secretRef:
+              name: qrcode-generator-deploy-secrets
+        securityContext:
+          allowPrivilegeEscalation: false
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - qrcode-generator
+                    - key: tier
+                      operator: In
+                      values:
+                        - web
+                topologyKey: doks.digitalocean.com/node-id
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: qrcode-generator-pdb
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: qrcode-generator
+#      tier: web
+#      env: staging
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app: qrcode-generator
+    env: staging
+    kind: configmap
+  name: qrcode-generator-web-config
+  namespace: qrcode-generator-staging
+data:
+  LOG_LEVEL: 'info'
+  BIND_ADDR: '0.0.0.0'
+  POOL_SIZE: '3'
+  MAILGUN_DOMAIN: 'mg.accounts.ameelio.org'
+  HOST: 'accounts.ameelio.xyz'
+  PORT: '4000'
+  EXTERNAL_HOST: 'accounts.ameelio.xyz'
+  EXTERNAL_PORT: '443'
+  EXTERNAL_SCHEME: 'https'
+  DATABASE_TLS_ENABLED: 'true'
+  # Vars from secrets
+  # DATABASE_URL
+  # MAILGUN_API_KEY
+  # SERET_KEY_BASE
+  # SENTRY_DNS
+
+# Service annotations for Digital Ocean
+# https://docs.digitalocean.com/products/kubernetes/how-to/configure-load-balancers/
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: qrcode-generator
+    tier: web
+    env: staging
+    kind: service
+  name: qrcode-generator
+  namespace: qrcode-generator-staging
+  annotations:
+    service.beta.kubernetes.io/do-loadbalancer-protocol: "http"
+    service.beta.kubernetes.io/do-loadbalancer-size-slug: "lb-small" # or lb-medium|lb-large
+spec:
+  type: LoadBalancer
+  selector:
+    app: qrcode-generator
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 4000
+      nodePort: 30000
+
+---
+apiVersion: domain-name-operator.tamx.org/v1
+kind: CloudflareDnsRecord
+metadata:
+  name: qrcode-generator-staging
+  labels:
+    app: qrcode-generator
+    tier: web
+    env: staging
+    kind: cloudflarednsrecord
+  namespace: qrcode-generator-staging
+spec:
+  hostName: qrcode-generator-staging.ameelio.xyz
+  serviceName: qrcode-generator
+  proxied: true
+
+---
+apiVersion: domain-name-operator.tamx.org/v1
+kind: CloudflareDnsRecord
+metadata:
+  name: accounts
+  labels:
+    app: qrcode-generator
+    tier: web
+    env: staging
+    kind: cloudflarednsrecord
+  namespace: qrcode-generator-staging
+spec:
+  hostName: qrcode.ameelio.xyz
+  serviceName: qrcode-generator
+  proxied: true
