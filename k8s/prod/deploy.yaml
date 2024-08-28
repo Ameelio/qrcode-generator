@@ -27,7 +27,7 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
-        runAsUser: 1000
+        runAsUser: 101
       imagePullSecrets:
         - name: ameelio-registry
       containers:
