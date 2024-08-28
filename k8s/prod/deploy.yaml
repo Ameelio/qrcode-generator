@@ -39,7 +39,7 @@ spec:
           protocol: TCP
         readinessProbe:
           httpGet:
-            path: /health_check/readiness
+            path: /
             port: 8080
           initialDelaySeconds: 5
           periodSeconds: 2
