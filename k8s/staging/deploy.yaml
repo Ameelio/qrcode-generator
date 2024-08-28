@@ -117,7 +117,6 @@ spec:
       protocol: TCP
       port: 80
       targetPort: 4000
-      nodePort: 30000
 
 ---
 apiVersion: domain-name-operator.tamx.org/v1
