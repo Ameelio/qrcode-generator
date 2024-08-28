@@ -43,11 +43,11 @@ spec:
             port: 4000
           initialDelaySeconds: 5
           periodSeconds: 2
-        envFrom:
-          - configMapRef:
-              name: qrcode-generator-web-config
-          - secretRef:
-              name: qrcode-generator-deploy-secrets
+        #envFrom:
+        #  - configMapRef:
+        #      name: qrcode-generator-web-config
+        #  - secretRef:
+        #      name: qrcode-generator-deploy-secrets
         securityContext:
           allowPrivilegeEscalation: false
       affinity:
@@ -80,18 +80,18 @@ spec:
 #      tier: web
 #      env: prod
 
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  labels:
-    app: qrcode-generator
-    env: prod
-    kind: configmap
-  name: qrcode-generator-web-config
-  namespace: qrcode-generator-prod
-data:
-  LOG_LEVEL: 'info'
+#---
+#apiVersion: v1
+#kind: ConfigMap
+#metadata:
+#  labels:
+#    app: qrcode-generator
+#    env: prod
+#    kind: configmap
+#  name: qrcode-generator-web-config
+#  namespace: qrcode-generator-prod
+#data:
+#  LOG_LEVEL: 'info'
 
 # Service annotations for Digital Ocean
 # https://docs.digitalocean.com/products/kubernetes/how-to/configure-load-balancers/
