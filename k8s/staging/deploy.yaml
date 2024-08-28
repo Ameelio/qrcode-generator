@@ -35,12 +35,12 @@ spec:
         name: qrcode-generator
         imagePullPolicy: Always
         ports:
-        - containerPort: 4000
+        - containerPort: 8080
           protocol: TCP
         readinessProbe:
           httpGet:
             path: /health_check/readiness
-            port: 4000
+            port: 8080
           initialDelaySeconds: 5
           periodSeconds: 2
         #envFrom:
@@ -118,7 +118,7 @@ spec:
     - name: http
       protocol: TCP
       port: 80
-      targetPort: 4000
+      targetPort: 8080
 
 ---
 apiVersion: domain-name-operator.tamx.org/v1
