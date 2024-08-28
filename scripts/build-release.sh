@@ -12,4 +12,3 @@ docker build \
   --tag "registry.digitalocean.com/ameelio-registry/qrcode-generator:${RELEASE_VERSION}" \
   --tag "registry.digitalocean.com/ameelio-registry/qrcode-generator:latest" \
   .
-
