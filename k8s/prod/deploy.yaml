@@ -5,25 +5,25 @@ metadata:
   labels:
     app: qrcode-generator
     tier: web
-    env: staging
+    env: prod
     kind: deployment
   name: qrcode-generator
-  namespace: qrcode-generator-staging
+  namespace: qrcode-generator-prod
 spec:
   replicas: 2
   selector:
     matchLabels:
       app: qrcode-generator
 #      tier: web
-#      env: staging
+#      env: prod
   template:
     metadata:
       labels:
         app: qrcode-generator
         tier: web
-        env: staging
+        env: prod
         kind: pod
-      namespace: qrcode-generator-staging
+      namespace: qrcode-generator-prod
     spec:
       securityContext:
         runAsNonRoot: true
@@ -76,7 +76,7 @@ spec:
     matchLabels:
       app: qrcode-generator
 #      tier: web
-#      env: staging
+#      env: prod
 
 ---
 apiVersion: v1
@@ -84,10 +84,10 @@ kind: ConfigMap
 metadata:
   labels:
     app: qrcode-generator
-    env: staging
+    env: prod
     kind: configmap
   name: qrcode-generator-web-config
-  namespace: qrcode-generator-staging
+  namespace: qrcode-generator-prod
 data:
   LOG_LEVEL: 'info'
 
@@ -101,10 +101,10 @@ metadata:
   labels:
     app: qrcode-generator
     tier: web
-    env: staging
+    env: prod
     kind: service
   name: qrcode-generator
-  namespace: qrcode-generator-staging
+  namespace: qrcode-generator-prod
   annotations:
     service.beta.kubernetes.io/do-loadbalancer-protocol: "http"
     service.beta.kubernetes.io/do-loadbalancer-size-slug: "lb-small" # or lb-medium|lb-large
@@ -123,15 +123,15 @@ spec:
 apiVersion: domain-name-operator.tamx.org/v1
 kind: CloudflareDnsRecord
 metadata:
-  name: qrcode-generator-staging
+  name: qrcode-generator-prod
   labels:
     app: qrcode-generator
     tier: web
-    env: staging
+    env: prod
     kind: cloudflarednsrecord
-  namespace: qrcode-generator-staging
+  namespace: qrcode-generator-prod
 spec:
-  hostName: qrcode-generator-staging.ameelio.xyz
+  hostName: qrcode-generator-prod.ameelio.org
   serviceName: qrcode-generator
   proxied: true
 
@@ -143,10 +143,10 @@ metadata:
   labels:
     app: qrcode-generator
     tier: web
-    env: staging
+    env: prod
     kind: cloudflarednsrecord
-  namespace: qrcode-generator-staging
+  namespace: qrcode-generator-prod
 spec:
-  hostName: qrcode.ameelio.xyz
+  hostName: qrcode.ameelio.org
   serviceName: qrcode-generator
   proxied: true
