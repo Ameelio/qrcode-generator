@@ -107,11 +107,8 @@ metadata:
     kind: service
   name: qrcode-generator
   namespace: qrcode-generator-prod
-  annotations:
-    service.beta.kubernetes.io/do-loadbalancer-protocol: "http"
-    service.beta.kubernetes.io/do-loadbalancer-size-slug: "lb-small" # or lb-medium|lb-large
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: qrcode-generator
   ports:
@@ -119,35 +116,3 @@ spec:
       protocol: TCP
       port: 80
       targetPort: 8080
-
----
-apiVersion: domain-name-operator.tamx.org/v1
-kind: CloudflareDnsRecord
-metadata:
-  name: qrcode-generator-prod
-  labels:
-    app: qrcode-generator
-    tier: web
-    env: prod
-    kind: cloudflarednsrecord
-  namespace: qrcode-generator-prod
-spec:
-  hostName: qrcode-generator-prod.ameelio.org
-  serviceName: qrcode-generator
-  proxied: true
-
----
-apiVersion: domain-name-operator.tamx.org/v1
-kind: CloudflareDnsRecord
-metadata:
-  name: accounts
-  labels:
-    app: qrcode-generator
-    tier: web
-    env: prod
-    kind: cloudflarednsrecord
-  namespace: qrcode-generator-prod
-spec:
-  hostName: qrcode.ameelio.org
-  serviceName: qrcode-generator
-  proxied: true
